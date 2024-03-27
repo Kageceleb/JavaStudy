@@ -20,35 +20,38 @@ public class HtmlAnalyzer {
         String line;
         Stack<String> tagsStack = new Stack<>();
         int depthCounter = 0;
-        int  deepestTag = 0;
+        int deepestTag = 0;
+        String targetText = "";
         while ((line = reader.readLine()) != null) {
             Pattern allTags = Pattern.compile("<[^/<>]+(?:\\s+[^<>]+)*>|<\\/[^<>]+>");
             Matcher findOut = allTags.matcher(line);
             while (findOut.find()) {
                 String tag = findOut.group();
                 if (tag.startsWith("</")) {
-                    String lastTag = tagsStack.peek();
-                    String newNewtag = tag.replace("/", "");
-                    if(newNewtag!=lastTag){System.out.println("houston we have a problem, ultima tag "+ lastTag +" tag atual /" + newNewtag);}else
-                    System.out.println(tagsStack.size());
-                    if(depthCounter>deepestTag){deepestTag = depthCounter;}
+
                     depthCounter--;
                     tagsStack.pop();
-                    System.out.println("removido "+tag+" profundidade "+depthCounter);
+                    System.out.println("removido " + tag + " profundidade " + depthCounter);
                 } else {
                     depthCounter++;
+                    if (depthCounter > deepestTag) {
+                        deepestTag = depthCounter;
+
+                    }
                     tagsStack.push(tag);
-                    System.out.println("adicionado "+tag+" profundidade "+depthCounter);
+                    System.out.println("adicionado " + tag + " profundidade " + depthCounter);
                 }
             }
 
             htmlContent.append(line);
+            if (!line.startsWith("<") && depthCounter == deepestTag) {targetText=line;}
         }
         System.out.println(tagsStack);
         reader.close();
         is.close();
         conn.disconnect();
         System.out.println(htmlContent.toString());
-        System.out.println("the Deepst level is "+deepestTag);
+        System.out.println("the Deepst level is " + deepestTag);
+        System.out.println("o texto mais profundo é " + targetText);
     }
 }
