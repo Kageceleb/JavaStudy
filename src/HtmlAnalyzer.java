@@ -14,16 +14,15 @@ public class HtmlAnalyzer {
         String initialURL = args[0];
         HtmlAnalyzer htmlAnalyzer = new HtmlAnalyzer();
         String htmlText = htmlAnalyzer.getHtml(initialURL);
-        System.out.println(htmlText);
         String targetText = htmlAnalyzer.findNestedText(htmlText);
-        System.out.println("O texto e:" + targetText);
+        System.out.println(targetText);
     }
 
     public String getHtml(String urlArg) throws Exception {
         String htmlContent = ""; // String para receber o texto html deste método
         try {
             URL url = new URL(urlArg);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection(); // abre uma conexão com a url (l21)
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection(); // abre uma conexão com a url (line 21)
             conn.setRequestMethod("GET");
             InputStream is = conn.getInputStream();
             BufferedReader reader = new BufferedReader(new InputStreamReader(is));
@@ -33,6 +32,9 @@ public class HtmlAnalyzer {
                 htmlContentBuilder.append(line.trim());
             }
             htmlContent = htmlContentBuilder.toString();
+            reader.close();
+            is.close();
+            conn.disconnect();
         } catch (Exception e) {
             System.out.println("URL connection error");
         }
@@ -46,28 +48,31 @@ public class HtmlAnalyzer {
         int deepestTag = 0;
         Pattern tagPattern = Pattern.compile(tagRegex);
         Matcher findOut = tagPattern.matcher(htmlContent);
+        int beginIndex=0; //seta o index onde começa o texto mais profundo (line 69 (nice!))
+        int endIndex=0; //seta o index onde termina o texto mais profundo (line 57)
         while (findOut.find()) {
             String tag = findOut.group();
             String tagClear = findOut.group(1);
-            System.out.println(tag);
             if (tag.startsWith("</")) {
+                // if(tagClear == tagsStack.peek()){System.out.println("tags "+tagClear+ " " + tagsStack.peek());}
+                if(deepestTag == depthCounter){
+                    endIndex=findOut.start();
+                    targetText = htmlContent.substring(beginIndex,endIndex) ;           
+                }
                 depthCounter--;
-                System.out.println(tagsStack);
                 tagsStack.pop();
             } else {
                 depthCounter++;
-                tagsStack.push(tagClear);
-                System.out.println(tagsStack +" " +depthCounter + " "+ deepestTag); //**********remover*********
+                tagsStack.push(tagClear.trim());
                 if (depthCounter > deepestTag) {
                     deepestTag = depthCounter;
+                    beginIndex=findOut.end();
                 }
-            }
-            if (depthCounter >= deepestTag){
-                targetText=tag;
-
+            
             }
 
         }
+
         return targetText;
     }
 
