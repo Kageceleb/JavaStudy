@@ -3,55 +3,72 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.Scanner;
 import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class HtmlAnalyzer {
+    String tagRegex = "<\\/?(\\w+)>";
+
     public static void main(String[] args) throws Exception {
-        Scanner sc = new Scanner(System.in);
-        URL url = new URL("http://192.168.1.7:8080");
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestMethod("GET");
-        InputStream is = conn.getInputStream();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-        StringBuilder htmlContent = new StringBuilder();
-        String line;
+        String initialURL = args[0];
+        HtmlAnalyzer htmlAnalyzer = new HtmlAnalyzer();
+        String htmlText = htmlAnalyzer.getHtml(initialURL);
+        System.out.println(htmlText);
+        String targetText = htmlAnalyzer.findNestedText(htmlText);
+        System.out.println("O texto e:" + targetText);
+    }
+
+    public String getHtml(String urlArg) throws Exception {
+        String htmlContent = ""; // String para receber o texto html deste método
+        try {
+            URL url = new URL(urlArg);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection(); // abre uma conexão com a url (l21)
+            conn.setRequestMethod("GET");
+            InputStream is = conn.getInputStream();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+            StringBuilder htmlContentBuilder = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                htmlContentBuilder.append(line.trim());
+            }
+            htmlContent = htmlContentBuilder.toString();
+        } catch (Exception e) {
+            System.out.println("URL connection error");
+        }
+        return htmlContent;
+    }
+
+    public String findNestedText(String htmlContent) throws Exception {
+        String targetText = "";
         Stack<String> tagsStack = new Stack<>();
         int depthCounter = 0;
         int deepestTag = 0;
-        String targetText = "";
-        while ((line = reader.readLine()) != null) {
-            Pattern allTags = Pattern.compile("<[^/<>]+(?:\\s+[^<>]+)*>|<\\/[^<>]+>");
-            Matcher findOut = allTags.matcher(line);
-            while (findOut.find()) {
-                String tag = findOut.group();
-                if (tag.startsWith("</")) {
-
-                    depthCounter--;
-                    tagsStack.pop();
-                    System.out.println("removido " + tag + " profundidade " + depthCounter);
-                } else {
-                    depthCounter++;
-                    if (depthCounter > deepestTag) {
-                        deepestTag = depthCounter;
-
-                    }
-                    tagsStack.push(tag);
-                    System.out.println("adicionado " + tag + " profundidade " + depthCounter);
+        Pattern tagPattern = Pattern.compile(tagRegex);
+        Matcher findOut = tagPattern.matcher(htmlContent);
+        while (findOut.find()) {
+            String tag = findOut.group();
+            String tagClear = findOut.group(1);
+            System.out.println(tag);
+            if (tag.startsWith("</")) {
+                depthCounter--;
+                System.out.println(tagsStack);
+                tagsStack.pop();
+            } else {
+                depthCounter++;
+                tagsStack.push(tagClear);
+                System.out.println(tagsStack +" " +depthCounter + " "+ deepestTag); //**********remover*********
+                if (depthCounter > deepestTag) {
+                    deepestTag = depthCounter;
                 }
             }
+            if (depthCounter >= deepestTag){
+                targetText=tag;
 
-            htmlContent.append(line);
-            if (!line.startsWith("<") && depthCounter == deepestTag) {targetText=line;}
+            }
+
         }
-        System.out.println(tagsStack);
-        reader.close();
-        is.close();
-        conn.disconnect();
-        System.out.println(htmlContent.toString());
-        System.out.println("the Deepst level is " + deepestTag);
-        System.out.println("o texto mais profundo é " + targetText);
+        return targetText;
     }
+
 }
