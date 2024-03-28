@@ -48,16 +48,19 @@ public class HtmlAnalyzer {
         int deepestTag = 0;
         Pattern tagPattern = Pattern.compile(tagRegex);
         Matcher findOut = tagPattern.matcher(htmlContent);
-        int beginIndex=0; //seta o index onde começa o texto mais profundo (line 69 (nice!))
-        int endIndex=0; //seta o index onde termina o texto mais profundo (line 57)
+        int beginIndex = 0; // seta o index onde começa o texto mais profundo (line 69 (nice!))
+        int endIndex = 0; // seta o index onde termina o texto mais profundo (line 57)
         while (findOut.find()) {
             String tag = findOut.group();
             String tagClear = findOut.group(1);
             if (tag.startsWith("</")) {
-                // if(tagClear == tagsStack.peek()){System.out.println("tags "+tagClear+ " " + tagsStack.peek());}
-                if(deepestTag == depthCounter){
-                    endIndex=findOut.start();
-                    targetText = htmlContent.substring(beginIndex,endIndex) ;           
+                if(!tagClear.equals(tagsStack.peek())){
+                    return "malformed HTML";
+                } 
+
+                if (deepestTag == depthCounter) {
+                    endIndex = findOut.start();
+                    targetText = htmlContent.substring(beginIndex, endIndex);
                 }
                 depthCounter--;
                 tagsStack.pop();
@@ -66,9 +69,9 @@ public class HtmlAnalyzer {
                 tagsStack.push(tagClear.trim());
                 if (depthCounter > deepestTag) {
                     deepestTag = depthCounter;
-                    beginIndex=findOut.end();
+                    beginIndex = findOut.end();
                 }
-            
+
             }
 
         }
