@@ -20,7 +20,7 @@ public class HtmlAnalyzer {
     public static String getHtml(String urlArg) {
         String htmlContent = ""; // String para receber o texto html deste método
         try {
-            URL url = new URL(urlArg);
+            URL url = new URL(urlArg); // verify if it's an valid URL
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
             InputStream is = conn.getInputStream();
@@ -44,36 +44,34 @@ public class HtmlAnalyzer {
     public static String findNestedText(String htmlContent) {
         String targetText = "";
         Stack<String> tagsStack = new Stack<>();
-        int deepestTag = 0;
+        int deepestTag = 0;// guardo
         Pattern tagPattern = Pattern.compile("<\\/?(\\w+)>");
         Scanner scanner = new Scanner(htmlContent);
-        try {
-            while (scanner.hasNextLine()) {
-                String line = scanner.nextLine().trim();
+        while (scanner.hasNextLine()) {
+            String line = scanner.nextLine().trim();
 
-                Matcher tagMatched = tagPattern.matcher(line);
-                if (tagMatched.find()) {
-                    String tagName = tagMatched.group(1);
-                    if (line.startsWith("</")) {
-                        String lastTagInStack = tagsStack.pop();
-                        if (!lastTagInStack.equals(tagName)) {
-                            throw new Error("malformed HTML");
-                        }
-                    } else if (line.startsWith("<")) {
-                        tagsStack.push(tagName);
+            Matcher tagMatched = tagPattern.matcher(line);
+            if (tagMatched.find()) {
+                String tagName = tagMatched.group(1);
+                if (line.startsWith("</")) {
+                    String lastTagInStack = tagsStack.pop();
+                    if (!lastTagInStack.equals(tagName)) {
+                        scanner.close();
+                        return "malformed HTML";
                     }
-                } else {
-                    if (tagsStack.size() > deepestTag) {
-                        targetText = line;
-                        deepestTag = tagsStack.size();
-                    }
+                } else if (line.startsWith("<")) {
+                    tagsStack.push(tagName);
+                }
+            } else {
+                if (tagsStack.size() > deepestTag) {
+                    targetText = line;
+                    deepestTag = tagsStack.size();
                 }
             }
-        } catch (Error e) {
-            targetText = "";
-            System.out.println(e.getMessage());
-        } finally {
-            scanner.close();
+        }
+        scanner.close();
+        if (tagsStack.size() != 0) {
+            return "malformed HTML";
         }
         return targetText;
     }
